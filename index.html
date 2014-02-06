@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+	<script src="scripts/jquery-1.11.0.min.js"></script>
+	<script src="flot/jquery.flot.min.js"></script>
+	<script src="scripts/jquery.flot.axislabels.js"></script>
+	<script src="scripts/underscore-min.js"></script>
+	<script src="sim/sim.js"></script>
+	<script src="sim/array_utils.js"></script>
+	<script src="sim/sim_utils.js"></script>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap-theme.min.css">
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+	<style>
+		.axisLabels{
+			color:#000;
+		}
+	</style>
+</head>
+<body>
+	<script>
+	var Istim = HHSIM.makeStim(0,0,0);
+	var Vrest = -70;
+	function init()
+	{
+		$("#gen").click(function(){
+			var tStart = parseFloat($("#Tstart").val());
+			var duration = parseFloat($("#duration").val());
+			var amplitude = parseFloat($("#amp").val());
+			var temp = parseFloat($("#temp").val());
+			HHSIM.utils.updateQ(temp);
+
+			Istim = _.chain(Istim).zip(HHSIM.makeStim(amplitude, tStart, tStart+duration)).map(add).value()
+			doSim();
+
+		});
+		$("#clear").click(function(){
+			Istim = HHSIM.makeStim(0,0,0);
+			var tStart = parseFloat($("#Tstart").val());
+			var duration = parseFloat($("#duration").val());
+			var amplitude = parseFloat($("#amp").val());
+			var temp = parseFloat($("#temp").val());
+			HHSIM.utils.updateQ(temp);
+
+			Istim = _.chain(Istim).zip(HHSIM.makeStim(amplitude, tStart, tStart+duration)).map(add).value()
+			doSim();
+
+		});
+
+		$("#minThresh").click(function(){
+			$("#Tstart").val(2);
+			$("#duration").val(1);
+			$("#amp").val(7);
+			$("#temp").val(6.3);
+			$("#clear").click();
+		});
+
+		$("#anode").click(function(){
+			$("#Tstart").val(2);
+			$("#duration").val(2);
+			$("#amp").val(-10);
+			$("#temp").val(6.3);
+			$("#clear").click();
+		});
+
+		$("#25").click(function(){
+			$("#Tstart").val(2);
+			$("#duration").val(1);
+			$("#amp").val(15);
+			$("#temp").val(25);
+			$("#clear").click();
+		});
+		Istim = HHSIM.makeStim(10, 1, 2);
+		doSim();
+	}
+
+	function doSim(){
+		var d = HHSIM.simulate(Istim);
+		Vm = _.map(d.v_m, function(x) {return x + Vrest});
+		
+		$.plot($("#sim"), 
+			[ 
+				{label: "Vm", data:_.zip(d.t, Vm), yaxis:1},
+				{label: "Istim", data:_.zip(d.t, Istim), yaxis:2}
+			],
+			{
+				yaxes: [ {min:-100, max:50, axisLabel: 'Transmembrane Voltage (mV)'}, { min:-30, max:50, position: "right", axisLabel: 'Current (mA)'} ],
+				xaxes: [ {axisLabel: 'Time (ms)'}]
+			}
+			);
+		
+		$.plot($("#mnh"), [ 
+				{label: "m", data:_.zip(d.t, d.m)},
+				{label: "n", data:_.zip(d.t, d.n)},
+				{label: "h", data:_.zip(d.t, d.h)}
+			],
+			{
+				yaxes: [ {min:0, max:1, axisLabel: 'Probability'}],
+				xaxes: [ {axisLabel: 'Time (ms)'}]
+			}
+			);
+		
+	}
+		$(function(){
+			init();
+		});
+	</script>
+	<div class="container">
+		<div id="mnh" style="width:100%; height:250px;"></div>
+		<div id="sim" style="width:100%; height:400px;"></div>
+		<form role="form" class="form-inline" action="javascript:void(0);">
+			<div class="form-group">
+				<label for="Tstart">Start Time (ms):</label>
+				<input type="text" class="form-control" id="Tstart" placeholder="" value="1">
+			</div>
+			<div class="form-group">
+				<label for="duration">Duration (ms):</label>
+				<input type="text" class="form-control" id="duration" placeholder="" value="1">
+			</div>
+			<div class="form-group">
+				<label for="amp">Amplitude (mV):</label>
+				<input type="text" class="form-control" id="amp" placeholder="" value="10">
+			</div>
+			<div class="form-group">
+				<label for="temp">Temperature (C):</label>
+				<input type="text" class="form-control" id="temp" placeholder="" value="6.3">
+			</div>
+			<button class="btn btn-primary" id="gen">Add</button>
+			<button class="btn btn-warning" id="clear">Generate New</button>
+		</form>
+		<a class="btn" id="minThresh">Minimum Threshold, 6.3 C</a>
+		<a class="btn" id="anode">Anode Break Excitation C</a>
+		<a class="btn" id="25">AP, 25 C C</a>
+	</div>
+</body>
+
+</html>
